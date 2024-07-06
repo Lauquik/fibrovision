@@ -4,6 +4,7 @@ from openpyxl import Workbook
 from rich import print as rprint
 from rich.table import Table
 from rich.console import Console
+import subprocess
 import os
 
 # Function to generate Fibonacci series for 30 dates
@@ -144,7 +145,21 @@ def show_incomplete_todos():
     else:
         print("Horray!, You dont' have any incomplete todos remaining")
     workbook.save('learning.xlsx')
-    
+
+
+def run_command(command):
+    result = subprocess.run(command, capture_output=True, text=True, shell=True)
+    if result.returncode != 0:
+        print(f"Error: {result.stderr}")
+    else:
+        print(result.stdout)
+
+def sync_repo(remote_name='origin'):
+    today = datetime.today()
+    run_command(f'git pull {remote_name} main')
+    run_command('git add .')
+    run_command(f'git commit -m "sync {today}"')
+    run_command(f'git push {remote_name} main')    
 
 # Main function to interact with the user
 def main():
@@ -154,6 +169,7 @@ def main():
         rprint("2. Show today's Revisions")
         rprint("3. Show Past incomplete Revisions")
         rprint("4. Exit")
+        rprint("5. Sync")
         choice = input("Enter your choice: ")
 
         if choice == '1':
@@ -168,6 +184,8 @@ def main():
             show_incomplete_todos()
         elif choice == '4':
             break
+        elif choice =='5':
+            sync_repo()
         else:
             print("Invalid choice. Please try again.")
 
