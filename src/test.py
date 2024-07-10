@@ -7,6 +7,10 @@ def days_from_june_first():
 
     return delta.days
 
-print(days_from_june_first())
+# print(days_from_june_first())
 
 
+import pyfiglet
+
+title = pyfiglet.figlet_format("MY Title")
+print(title)

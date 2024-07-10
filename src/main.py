@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 import openpyxl
 from openpyxl import Workbook
 from rich import print as rprint
+from rich.table import Table
+from rich.console import Console
 import os
 
 # Function to generate Fibonacci series for 30 dates
@@ -35,10 +37,13 @@ def add_learning(topic):
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = 'Revision'
+        tracking_sheet = workbook.create_sheet('Track')
+        tracking_sheet.append(['Date', 'Topic'])
         sheet.append(['Revision_Date', 'Topic', "Revision_number", 'Revision_status'])
     else:
         workbook = openpyxl.load_workbook('learning.xlsx')
         sheet = workbook['Revision']
+        tracking_sheet = workbook['Track']
     
     row_num = days_from_june_first()+2
 
@@ -51,15 +56,24 @@ def add_learning(topic):
         sheet.cell(row=row_num, column=col_num, value=topic)
         sheet.cell(row=row_num, column=col_num+1, value=i+1)
         sheet.cell(row=row_num, column=col_num+2, value='Incomplete')
-
+    
+    tracking_sheet.append([today, topic])
     workbook.save('learning.xlsx')
-    print("Today's learning has been added.")
 
 def reload_todos(todos:list, sheet, row_today):
     todos.clear()
     for i, cell in enumerate(sheet[row_today][1::3]):
         if cell.value is not None:
             todos.append((cell.value, sheet[row_today][(3*i)+2].value, sheet[row_today][(3*i)+3].value))
+
+
+def create_table():
+    table = Table(title="Revision Today")
+    table.add_column("SR.NO", justify="center", style="cyan", no_wrap=True)
+    table.add_column("TOPIC", style="magenta")
+    table.add_column("REVISION NO", justify="center", style="yellow")
+    table.add_column("STATUS", justify="center", style="green")
+    return table
 
 # Function to show today's todo
 def show_todos():
@@ -72,12 +86,16 @@ def show_todos():
     row_today = days_from_june_first()+2
     todos = []
     reload_todos(todos, sheet, row_today)
+    console = Console()
     t = len(todos)
     if todos:
         while True:
-            print("Select Todo number to mark complete\nEnter 0 to exit")
+            table = create_table()
+            print("Select Todo number to mark complete\nEnter 0 to exit\n")
             for i, todo in enumerate(todos):
-                print(f"{i+1} - Topic: {todo[0]}, Revision Number: {todo[1]}, Status: {todo[2]}")
+                # print(f"{i+1} - Topic: {todo[0]}, Revision Number: {todo[1]}, Status: {todo[2]}\n")
+                table.add_row(str(i+1),todo[0],str(todo[1]), todo[2])
+            console.print(table)
             choice = int(input("Select Option: "))
             if choice==0:
                 break
@@ -99,7 +117,7 @@ def show_incomplete_todos():
     workbook = openpyxl.load_workbook('learning.xlsx')
     sheet = workbook['Revision']
     row_upto_yesterday = days_from_june_first()+1
-    
+    console = Console()
     Incomplete_todos = []
     for k, row in enumerate(sheet.iter_rows(min_row=2, max_row=row_upto_yesterday, values_only=True)):
         if row[1] is not None:
@@ -109,9 +127,12 @@ def show_incomplete_todos():
     t = len(Incomplete_todos)
     if Incomplete_todos:
         while True:
-            print("Select Todo number to mark complete\nEnter 0 to exit")
+            table = create_table()
+            print("Select Todo number to mark complete\nEnter 0 to exit\n")
             for i, todo in enumerate(Incomplete_todos):
-                print(f"{i+1} - Topic: {todo[2]}, Revision Number: {todo[3]}, Status: {todo[4]}")
+                # print(f"{i+1} - Topic: {todo[2]}, Revision Number: {todo[3]}, Status: {todo[4]}\n")
+                table.add_row(str(i+1),todo[2],str(todo[3]), todo[4])
+            console.print(table)
             choice = int(input("Select Option: "))
             if choice==0:
                 break
@@ -128,11 +149,11 @@ def show_incomplete_todos():
 # Main function to interact with the user
 def main():
     while True:
-        print("\nMenu:")
-        print("1. Add today's learning")
-        print("2. Show today's Revisions")
-        print("3. Show Past incomplete Revisions")
-        print("4. Exit")
+        rprint("\nMenu:")
+        rprint("1. Add today's learning")
+        rprint("2. Show today's Revisions")
+        rprint("3. Show Past incomplete Revisions")
+        rprint("4. Exit")
         choice = input("Enter your choice: ")
 
         if choice == '1':
@@ -140,6 +161,7 @@ def main():
             topics = [topic.strip() for topic in topics_input.split(',')]
             for topic in topics:
                 add_learning(topic) 
+            print("Your today's learnings has been added")
         elif choice == '2':
             show_todos()
         elif choice=='3':
